@@ -13,7 +13,11 @@ public class RogueDriver extends JApplet implements KeyListener
 {
 	//IMPORTANT- Make sure Quinn uses the current Sprite class- it will be in the main branch of the Github repository
 	Sprite sprite; //16 Sprites- Name them similar to the file names I made to make it easier to keep track
-	BufferedImage brickImage; //16 BufferedImages
+	BufferedImage brickImage;
+	BufferedImage upAttack;//16 BufferedImages
+	BufferedImage leftAttack;
+	BufferedImage rightAttack;
+	BufferedImage downAttack;
 	//MapGenerator gen;
 	ArrayList<BufferedImage> animations; //This array list will
 	ArrayList<Character> sprites;
@@ -41,6 +45,7 @@ public class RogueDriver extends JApplet implements KeyListener
 	final int DOWN = 40;
 	final int LEFT = 37;
 	final int RIGHT = 39;
+	final int SPACE = 32;
 	final int FACE_RIGHT = 0;
 	final int FACE_DOWN = 1;
 	final int FACE_LEFT = 2;
@@ -65,6 +70,7 @@ public class RogueDriver extends JApplet implements KeyListener
 		try
 		{
 			brickImage = ImageIO.read(new File("brick.png"));
+
 			animations.add(ImageIO.read(new File("Player1_Down.png")));
 			animations.add(ImageIO.read(new File("Player1_DownRun.png")));
 			animations.add(ImageIO.read(new File("Player1_Down2.png")));
@@ -80,7 +86,10 @@ public class RogueDriver extends JApplet implements KeyListener
 			animations.add(ImageIO.read(new File("Player1_Right.png")));
 			animations.add(ImageIO.read(new File("Player1_RightRun.png")));
 			animations.add(ImageIO.read(new File("Player1_Right2.png")));
-			animations.add(ImageIO.read(new File("Player1_RightRun2.png")));
+			animations.add(ImageIO.read(new File("P1up_01.png")));
+			animations.add(ImageIO.read(new File("P1left_01.png")));
+			animations.add(ImageIO.read(new File("P1right_01.png")));
+			animations.add(ImageIO.read(new File("P1down_01.png")));
 			pickup = new RoguePickup(brickImage,900,900);
 			//Do this once for each character model - There should be 16 total
 		}
@@ -106,7 +115,7 @@ public class RogueDriver extends JApplet implements KeyListener
 				//System.out.println("y1 = " + y1);
 				if(y1 == 8)
 				{
-					System.out.println("Fuck");
+					System.out.println("Darn");
 				}
 				map[x1][y1] = new Sprite(brickImage, x1, y1);
 				xPos += XSIZE;
@@ -135,6 +144,7 @@ public class RogueDriver extends JApplet implements KeyListener
 		{
 			keys.add((Integer)e.getKeyCode());
 		}
+		System.out.println(e.getKeyCode());
 		//System.out.println(timeheld);
 	}
 	public void keyReleased(KeyEvent e)
@@ -209,7 +219,7 @@ public class RogueDriver extends JApplet implements KeyListener
 						System.out.println(keys.get(keyIndex).intValue());
 					}*/
 
-					if(keys.contains(RIGHT))
+					if(keys.contains(RIGHT) && !sprites.get(1).collidesRight(testBrick))
 					{
 						xPos += speed;
 						facing = FACE_RIGHT;
@@ -230,7 +240,7 @@ public class RogueDriver extends JApplet implements KeyListener
 							}
 						}
 					}
-					if(keys.contains(LEFT))
+					if(keys.contains(LEFT) && !sprites.get(1).collidesLeft(testBrick))
 					{
 						xPos -= speed;
 						facing = FACE_LEFT;
@@ -251,7 +261,7 @@ public class RogueDriver extends JApplet implements KeyListener
 							}
 						}
 					}
-					if(keys.contains(UP))
+					if(keys.contains(UP) && !sprites.get(1).collidesUp(testBrick))
 					{
 						yPos -= speed;
 						facing = FACE_UP;
@@ -272,7 +282,7 @@ public class RogueDriver extends JApplet implements KeyListener
 							}
 						}
 					}
-					if(keys.contains(DOWN))
+					if(keys.contains(DOWN) && !sprites.get(1).collidesDown(testBrick))
 					{
 						yPos += speed;
 						facing = FACE_DOWN;
@@ -293,31 +303,31 @@ public class RogueDriver extends JApplet implements KeyListener
 							}
 						}
 					}
-					if(keys.contains(W))
+					if(keys.contains(SPACE))
 					{
-						for(int x = 0; x < sprites.size(); x++)
+						/*for(int x = 0; x < sprites.size(); x++)
 						{
 							if((sprites.get(x)).attackCollision(testBrick,facing) == true && x == characterImageDisplayed)
-							{
+							{*/
 								System.out.println("hit");
 								if(facing == 0)
 								{
-									xPos-= 10;
+									characterImageDisplayed = 18;
 								}
 								if(facing == 1)
 								{
-									yPos-= 10;
+									characterImageDisplayed = 19;
 								}
 								if(facing == 2)
 								{
-									xPos+= 10;
+									characterImageDisplayed = 20;
 								}
 								if(facing == 3)
 								{
-									yPos += 10;
+									characterImageDisplayed = 17;
 								}
-							}
-						}
+							//}
+						//}
 					}
 //					imageDisplayed++;
 					//if(imageDisplayed
@@ -328,6 +338,7 @@ public class RogueDriver extends JApplet implements KeyListener
 					if(sprites.get(1).collidesDown(testBrick))
 					{
 						System.out.println("Collision");
+
 					}
 					repaint();
 					t.sleep(50);
