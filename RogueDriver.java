@@ -86,10 +86,10 @@ public class RogueDriver extends JApplet implements KeyListener
 			animations.add(ImageIO.read(new File("Player1_Right.png")));
 			animations.add(ImageIO.read(new File("Player1_RightRun.png")));
 			animations.add(ImageIO.read(new File("Player1_Right2.png")));
-			animations.add(ImageIO.read(new File("P1up_01.png")));
-			animations.add(ImageIO.read(new File("P1left_01.png")));
-			animations.add(ImageIO.read(new File("P1right_01.png")));
-			animations.add(ImageIO.read(new File("P1down_01.png")));
+			animations.add(ImageIO.read(new File("P1right_01_new.png")));
+			animations.add(ImageIO.read(new File("P1down_01_new.png")));
+			animations.add(ImageIO.read(new File("P1left_01_new.png")));
+			animations.add(ImageIO.read(new File("P1up_01_new.png")));
 			pickup = new RoguePickup(brickImage,900,900);
 			//Do this once for each character model - There should be 16 total
 		}
@@ -175,7 +175,10 @@ public class RogueDriver extends JApplet implements KeyListener
 			super.paintComponent(g);
 			sprites.get(characterImageDisplayed).draw(g);
 			testBrick.draw(g);
-			pickup.draw(g);
+			if(pickup.collidesGeneral(sprites.get(1)) == false)
+			{
+				pickup.draw(g);
+			}
 			/*
 			for(int index = 0; index < sprites.size(); index++)
 			{
@@ -229,12 +232,12 @@ public class RogueDriver extends JApplet implements KeyListener
 						}
 						else
 						{
-							if(characterImageDisplayed < 12 || characterImageDisplayed > 16)
+							if(characterImageDisplayed < 12 || characterImageDisplayed > 14)
 							{
 								characterImageDisplayed = 12;
 							}
 							characterImageDisplayed++;
-							if(characterImageDisplayed == 16)
+							if(characterImageDisplayed == 14)
 							{
 								characterImageDisplayed = 12;
 							}
@@ -309,22 +312,22 @@ public class RogueDriver extends JApplet implements KeyListener
 						{
 							if((sprites.get(x)).attackCollision(testBrick,facing) == true && x == characterImageDisplayed)
 							{*/
-								System.out.println("hit");
+								//System.out.println("hit");
 								if(facing == 0)
 								{
-									characterImageDisplayed = 18;
+									characterImageDisplayed = 15;
 								}
 								if(facing == 1)
 								{
-									characterImageDisplayed = 19;
+									characterImageDisplayed = 16;
 								}
 								if(facing == 2)
 								{
-									characterImageDisplayed = 20;
+									characterImageDisplayed = 17;
 								}
 								if(facing == 3)
 								{
-									characterImageDisplayed = 17;
+									characterImageDisplayed = 18;
 								}
 							//}
 						//}
@@ -341,7 +344,7 @@ public class RogueDriver extends JApplet implements KeyListener
 
 					}
 					repaint();
-					t.sleep(50);
+					t.sleep(16);
 				}
 			}
 			catch(Exception e)
