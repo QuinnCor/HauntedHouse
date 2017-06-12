@@ -2,21 +2,17 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 public class RogueCharacter extends RogueSprite
 {
-	int speed;
 	int health;
 	int attackSpeed;
-	int maxHealth;
 	int range;
-	public RogueCharacter(BufferedImage image, int x, int y, int speed, int attackSpeed, int maxHealth, int range)
+	public RogueCharacter(BufferedImage image, int x, int y, int attackSpeed, int maxHealth, int range)
 	{
 		super(image, x, y);
-		this.speed = speed;
 		this.attackSpeed = attackSpeed;
-		this.maxHealth = maxHealth;
 		this.range = range;
 		health = maxHealth;
 	}
-	public boolean attackCollision(Sprite sprite, int direction)
+	public boolean attackCollision(RogueSprite sprite, int direction)
 	{
 		//0 = Right, 1 = Left, 2 = Up, 3 = Down
 		boolean collides = false;
@@ -66,10 +62,6 @@ public class RogueCharacter extends RogueSprite
 		}
 		return collides;
 	}
-	public void setSpeed(int speed)
-	{
-		this.speed = speed;
-	}
 	public void setHealth(int health)
 	{
 		this.health = health;
@@ -77,18 +69,6 @@ public class RogueCharacter extends RogueSprite
 	public void setAttackSpeed(int attackSpeed)
 	{
 		this.attackSpeed = attackSpeed;
-	}
-	public void setMaxHealth(int maxHealth)
-	{
-		this.maxHealth = maxHealth;
-	}
-	public int getMaxHealth()
-	{
-		return maxHealth;
-	}
-	public int getSpeed()
-	{
-		return speed;
 	}
 	public int getHealth()
 	{

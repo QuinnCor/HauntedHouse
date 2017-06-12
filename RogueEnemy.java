@@ -13,10 +13,21 @@ public class RogueEnemy extends RogueCharacter
 	Random r;
 	public RogueEnemy(BufferedImage image, int x, int y, int speed, int attackSpeed, int maxHealth, int range)
 	{
-		super(image, x, y, speed, attackSpeed, maxHealth, range);
+		super(image, x, y, attackSpeed, maxHealth, range);
 		this.Health = Health;
 		r = new Random();
 	}
+	public boolean CollidesGeneral(RogueCharacter character)
+		{
+			if(collider.intersects(character.getCollider()))
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
 	public void setHealth(int newHealth)
 	{
 		Health = newHealth;
@@ -27,6 +38,7 @@ public class RogueEnemy extends RogueCharacter
 	}
 	public void randomMove()
 	{
+		//0 = Right, 1 = Left, 2 = Up, 3 = Down
 		int facing = r.nextInt(5);
 		if(facing == 0)
 		{

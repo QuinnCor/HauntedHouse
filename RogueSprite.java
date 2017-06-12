@@ -16,6 +16,7 @@ public class RogueSprite
 	int y;
 	Rectangle collider;
 	BufferedImage image;
+	boolean draw;
 
 	public RogueSprite(BufferedImage image, int x, int y)
 	{
@@ -25,6 +26,7 @@ public class RogueSprite
 		width = image.getWidth();
 		height = image.getHeight();
 		collider = new Rectangle(x, y, width, height);
+		draw = true;
 	}
 	public void setPosition(int x, int y)
 	{
@@ -149,9 +151,8 @@ public class RogueSprite
 	}
 	public void draw(Graphics g)
 	{
-		g.drawImage(image, x, y, null);
-		((Graphics2D)g).draw(collider);
-		System.out.println("x = " + x + " y = " + y);
+			g.drawImage(image, x, y, null);
+			((Graphics2D)g).draw(collider);
 	}
 }
 

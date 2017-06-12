@@ -11,33 +11,43 @@ import java.awt.image.BufferedImage;
 
 public class RogueDriver extends JApplet implements KeyListener
 {
-	//IMPORTANT- Make sure Quinn uses the current Sprite class- it will be in the main branch of the Github repository
 	Sprite sprite; //16 Sprites- Name them similar to the file names I made to make it easier to keep track
-	BufferedImage brickImage;
-	BufferedImage upAttack;//16 BufferedImages
-	BufferedImage leftAttack;
-	BufferedImage rightAttack;
-	BufferedImage downAttack;
-	//MapGenerator gen;
+	BufferedImage brickImage; //16 BufferedImages
+	BufferedImage ghostImage;
+	MapGenerator gen;
 	ArrayList<BufferedImage> animations; //This array list will
-	ArrayList<Character> sprites;
+	//ArrayList<Sprite> sprites;
+	ArrayList<RogueCharacter> player1Sprites;
 	ArrayList<Integer> keys;
-	Sprite testBrick;
-	RoguePickup pickup;
-	//RogueEnemy enemy;
+	//Sprite ghost;
+	ArrayList<RogueEnemy> ghosts;
 	Sprite[][] map;
+	ProjectileMotion pm;
+	Random r;
 	int[][] numberMap;
+	int attackSpeed, maxHealth, range;
 	int xPos, yPos;
+	int enemyX, enemyY;
+	int mapXPos, mapYPos;
 	int characterImageDisplayed;
 	int facing = 0;
 	int speed = 5;
-	long timeheld = 0;
-	final int XSIZE = 150;
-	final int YSIZE = 150;
-	final int XINIT = 50;
-	final int YINIT = 50;
-	final int XROWS = 10;
-	final int YROWS = 6;
+	int playerHealth;
+	//long timeheld = 0;
+	long timeUp;
+	long timeDown;
+	long timeRight;
+	long timeLeft;
+	boolean alive;
+	final int MAXHEALTH = 5000;
+	final int XSIZE = 50;
+	final int YSIZE = 50;
+	final int XINIT = 20;
+	final int YINIT = 20;
+	final int ENEMYXSIZE = 30;
+	final int ENEMYYSIZE = 30;
+	final int XROWS = 12;
+	final int YROWS = 12;
 	final int W = 87;
 	final int A = 65;
 	final int S = 83;
@@ -51,14 +61,34 @@ public class RogueDriver extends JApplet implements KeyListener
 	final int FACE_DOWN = 1;
 	final int FACE_LEFT = 2;
 	final int FACE_UP = 3;
+	boolean canCreate;
+	boolean canPlace;
 	Runner thread;
 	public void init()
 	{
 		animations  = new ArrayList<BufferedImage>();
-		sprites = new ArrayList<Character>();
 		keys = new ArrayList<Integer>();
-		xPos = 50;
-		yPos = 50;
+		ghosts = new ArrayList<RogueEnemy>();
+		map = new Sprite[XROWS][YROWS];
+		numberMap = new int[XROWS][YROWS];
+		canPlace = true;
+		alive = true;
+		r = new Random();
+		//80 + r.nextInt(500);
+		timeRight = 0;
+		timeLeft = 0;
+		timeUp = 0;
+		timeDown = 0;
+		xPos = 70;
+		yPos = 70;
+		mapXPos = 20;
+		mapYPos = 20;
+		enemyX = 300;
+		enemyY = 300;
+		attackSpeed = 1;
+		maxHealth = 1;
+		range = 1;
+		pm = new ProjectileMotion(2);
 		thread = new Runner();
 		setLayout(null);
 		setFocusable(true);
@@ -67,8 +97,8 @@ public class RogueDriver extends JApplet implements KeyListener
 		setContentPane(new DrawingPanel());
 		try
 		{
-			brickImage = ImageIO.read(new File("brick.png"));
-
+			brickImage = ImageIO.read(new File("greenWall.jpg"));
+			ghostImage = ImageIO.read(new File("enemy.GIF"));
 			animations.add(ImageIO.read(new File("Player1_Down.png")));
 			animations.add(ImageIO.read(new File("Player1_DownRun.png")));
 			animations.add(ImageIO.read(new File("Player1_Down2.png")));
@@ -84,30 +114,89 @@ public class RogueDriver extends JApplet implements KeyListener
 			animations.add(ImageIO.read(new File("Player1_Right.png")));
 			animations.add(ImageIO.read(new File("Player1_RightRun.png")));
 			animations.add(ImageIO.read(new File("Player1_Right2.png")));
-			animations.add(ImageIO.read(new File("P1right_01_new.png")));
-			animations.add(ImageIO.read(new File("P1down_01_new.png")));
-			animations.add(ImageIO.read(new File("P1left_01_new.png")));
-			animations.add(ImageIO.read(new File("P1up_01_new.png")));
-			pickup = new RoguePickup(brickImage,900,900);
-			//enemy = new RogueEnemy(brickImage,500,500,500,500,5,500);
-			//Do this once for each character model - There should be 16 total
+			animations.add(ImageIO.read(new File("Player1_RightRun2.png")));
+			//0 = Right, 1 = Left, 2 = Up, 3 = Down
+			animations.add(ImageIO.read(new File("P1right_02_new.png")));
+			animations.add(ImageIO.read(new File("P1left_02_new.png")));
+			animations.add(ImageIO.read(new File("P1up_02_new.png")));
+			animations.add(ImageIO.read(new File("P1down_02_new.png")));
+			playerHealth = MAXHEALTH;
+
 		}
 		catch(Exception e)
 		{
 			System.out.println("File Not Found");
 		}
-		for(int index = 0; index < animations.size(); index++)
+		//ghost = new Sprite(ghostImage, enemyX, enemyY);
+		for(int i = 0; i < 4; i++)
 		{
-			sprites.add(new Character(animations.get(index), index, index, 50, 50, 50, 50));
+			ghosts.add(new RogueEnemy(ghostImage, 0, 0, 0, 0, 50, 0));
+			ghosts.get(i).setPosition(r.nextInt(500) + 50, r.nextInt(500) + 50);
 		}
-		testBrick = new Sprite(brickImage, 300, 300);
+		do
+		{
+			gen = new MapGenerator(10, 10);
+			canCreate = gen.create();
+		} while(!canCreate);
+		gen.buildFinalMap();
+		numberMap = gen.getMap();
+		for(int y1 = 0; y1 < map[0].length; y1++)
+		{
+			for(int x1 = 0; x1 < map.length; x1++)
+			{
+				//System.out.println("X = " + x1 + " | Mapxpos = " + mapXPos);
+				map[x1][y1] = new Sprite(brickImage, mapXPos, mapYPos);
+				mapXPos += XSIZE;
+				System.out.println((mapXPos + XSIZE));
+			}
+			System.out.println();
+			mapXPos = XINIT;
+			mapYPos += YSIZE;
+		}
+		do
+		{
+			canPlace = true;
+			player1Sprites = new ArrayList<RogueCharacter>();
+			xPos = r.nextInt(500) + 80;
+			yPos = r.nextInt(500) + 80;
+			for(int index = 0; index < animations.size(); index++)
+			{
+				player1Sprites.add(new RogueCharacter(animations.get(index), xPos, yPos, attackSpeed, maxHealth, range));
+			}
+			for(int y = 0; y < map[0].length; y++)
+			{
+				for(int x = 0; x < map.length; x++)
+				{
+					if(player1Sprites.get(0).collidesGeneral(map[x][y]) && numberMap[x][y] != 0)
+					{
+						canPlace = false;
+					}
+				}
+			}
+		}while(!canPlace);
+		gen.print();
 		thread.start();
 	}
 	public void keyPressed(KeyEvent e) //Multi-Key Listener
 	{
 		boolean isRegistered = false;
 		int keyPressedValue = e.getKeyCode();
-		timeheld++;
+		if(keyPressedValue == UP)
+		{
+			timeUp++;
+		}
+		if(keyPressedValue == DOWN)
+		{
+			timeDown++;
+		}
+		if(keyPressedValue == LEFT)
+		{
+			timeLeft++;
+		}
+		if(keyPressedValue == RIGHT)
+		{
+			timeRight++;
+		}
 		for(int keyIndex = 0; keyIndex < keys.size(); keyIndex++)
 		{
 			if(keys.get(keyIndex).intValue() == keyPressedValue)
@@ -119,38 +208,35 @@ public class RogueDriver extends JApplet implements KeyListener
 		{
 			keys.add((Integer)e.getKeyCode());
 		}
+		//System.out.println(timeheld);
 	}
 	public void keyReleased(KeyEvent e)
 	{
+		//System.out.println(keys.size());
 		int keyReleasedValue = e.getKeyCode();
 		for(int keyIndex = 0; keyIndex < keys.size(); keyIndex++)
 		{
 			if(keys.get(keyIndex).intValue() == keyReleasedValue)
 			{
 				keys.remove(keyIndex);
-				if(keyReleasedValue == KeyEvent.VK_SPACE)
-				{
-					if(facing == 0)
-					{
-						characterImageDisplayed = 12;
-					}
-					if(facing == 1)
-					{
-						characterImageDisplayed = 0;
-					}
-					if(facing == 2)
-					{
-						characterImageDisplayed = 8;
-					}
-					if(facing == 3)
-					{
-						characterImageDisplayed = 4;
-					}
-				}
 			}
-
 		}
-		timeheld = 0;
+		if(keyReleasedValue == UP)
+		{
+			timeUp = 0;
+		}
+		if(keyReleasedValue == DOWN)
+		{
+			timeDown = 0;
+		}
+		if(keyReleasedValue == LEFT)
+		{
+			timeLeft = 0;
+		}
+		if(keyReleasedValue == RIGHT)
+		{
+			timeRight++;
+		}
 	}
 	public void keyClicked(KeyEvent e)
 	{
@@ -165,13 +251,25 @@ public class RogueDriver extends JApplet implements KeyListener
 		public void paintComponent(Graphics g)
 		{
 			super.paintComponent(g);
-			sprites.get(characterImageDisplayed).draw(g);
-			testBrick.draw(g);
-			//enemy.draw(g);
-				if(pickup.collidesGeneral(sprites.get(1)) == false)
+			if(alive == true)
+			{
+				player1Sprites.get(characterImageDisplayed).draw(g);
+			}
+			for(int i = 0; i < ghosts.size(); i++)
+			{
+				ghosts.get(i).draw(g);
+			}
+			for(int y1 = 0; y1 < map[0].length; y1++)
+			{
+				for(int x1 = 0; x1 < map.length; x1++)
 				{
-					pickup.draw(g);
+					if(numberMap[x1][y1] != 0)
+					{
+						map[x1][y1].draw(g);
+					}
+					//System.out.println("Ran");
 				}
+			}
 			//sprites.get(5).draw(g); //Use a timer to change the image ever few milliseconds for now. Once the image index reaches 16, it should go back to index = 0
 		}
 	}
@@ -188,125 +286,159 @@ public class RogueDriver extends JApplet implements KeyListener
 			{
 				while(true)
 				{
-					if(keys.contains(RIGHT) && !sprites.get(1).collidesRight(testBrick))
-					{
-						xPos += speed;
-						facing = FACE_RIGHT;
-						if(timeheld < 1)
+						for(int currentGhost = 0; currentGhost < ghosts.size(); currentGhost++)
 						{
-							characterImageDisplayed = 12;
-						}
-						else
-						{
-							if(characterImageDisplayed < 12 || characterImageDisplayed > 14)
+							for(int currentSprite = 16; currentSprite < player1Sprites.size(); currentSprite++)
 							{
-								characterImageDisplayed = 12;
-							}
-							characterImageDisplayed++;
-							if(characterImageDisplayed == 14)
-							{
-								characterImageDisplayed = 12;
+								if(ghosts.get(currentGhost).CollidesGeneral(player1Sprites.get(currentSprite)) == true)
+								{
+									playerHealth = playerHealth - 10;
+									if(playerHealth <= 0)
+									{
+										System.out.println("You Died");
+										alive = false;
+									}
+								}
 							}
 						}
-					}
-					if(keys.contains(LEFT) && !sprites.get(1).collidesLeft(testBrick))
-					{
-						xPos -= speed;
-						facing = FACE_LEFT;
-						if(timeheld < 1)
-						{
-							characterImageDisplayed = 8;
-						}
-						else
-						{
-							if(characterImageDisplayed < 8 || characterImageDisplayed > 12)
-							{
-								characterImageDisplayed = 8;
-							}
-							characterImageDisplayed++;
-							if(characterImageDisplayed >= 12)
-							{
-								characterImageDisplayed = 8;
-							}
-						}
-					}
-					if(keys.contains(UP) && !sprites.get(1).collidesUp(testBrick))
-					{
-						yPos -= speed;
-						facing = FACE_UP;
-						if(timeheld < 1)
-						{
-							characterImageDisplayed = 4;
-						}
-						else
-						{
-							if(characterImageDisplayed < 4 || characterImageDisplayed > 8)
-							{
-								characterImageDisplayed = 4;
-							}
-							characterImageDisplayed++;
-							if(characterImageDisplayed >= 8)
-							{
-								characterImageDisplayed = 4;
-							}
-						}
-					}
-					if(keys.contains(DOWN) && !sprites.get(1).collidesDown(testBrick))
-					{
-						yPos += speed;
-						facing = FACE_DOWN;
-						if(timeheld < 1)
-						{
-							characterImageDisplayed = 0;
-						}
-						else
-						{
-							if(characterImageDisplayed < 0 || characterImageDisplayed > 4)
-							{
-								characterImageDisplayed = 0;
-							}
-							characterImageDisplayed++;
-							if(characterImageDisplayed >= 4)
-							{
-								characterImageDisplayed = 0;
-							}
-						}
-					}
 					if(keys.contains(SPACE))
 					{
-								if(facing == 0)
+						//0 = Right, 1 = Left, 2 = Up, 3 = Down
+						if(facing == 0)
+						{
+							characterImageDisplayed = 16;
+						}
+						else if(facing == 1)
+						{
+							characterImageDisplayed = 19;
+						}
+						else if(facing == 2)
+						{
+							characterImageDisplayed = 17;
+						}
+						else if(facing == 3)
+						{
+							characterImageDisplayed = 18;
+						}
+						for(int currentGhost = 0; currentGhost < ghosts.size(); currentGhost++)
+						{
+							for(int currentSprite = 16; currentSprite < player1Sprites.size(); currentSprite++)
+							{
+								if(ghosts.get(currentGhost).CollidesGeneral(player1Sprites.get(currentSprite)) == true)
 								{
-									characterImageDisplayed = 15;
+									int health = ghosts.get(currentGhost).getHealth();
+									ghosts.get(currentGhost).setHealth(health - 50);
+									if(ghosts.get(currentGhost).isAlive() == false)
+									{
+										ghosts.remove(currentGhost);
+									}
+									break;
 								}
-								if(facing == 1)
-								{
-									characterImageDisplayed = 16;
-								}
-								if(facing == 2)
-								{
-									characterImageDisplayed = 17;
-								}
-								if(facing == 3)
-								{
-									characterImageDisplayed = 18;
-								}
+							}
+						}
 					}
-					for(int spriteIndex = 0; spriteIndex < sprites.size(); spriteIndex++)
+
+					else
 					{
-						sprites.get(spriteIndex).setPosition(xPos, yPos);
+						if(keys.contains(RIGHT) && !keys.contains(UP) && !keys.contains(DOWN))
+						{
+							xPos += speed;
+							facing = FACE_RIGHT;
+							if(timeRight < 1)
+							{
+								characterImageDisplayed = 12;
+							}
+							else
+							{
+								if(characterImageDisplayed < 12 || characterImageDisplayed > 16)
+								{
+									characterImageDisplayed = 12;
+								}
+								characterImageDisplayed++;
+								if(characterImageDisplayed == 16)
+								{
+									characterImageDisplayed = 12;
+								}
+							}
+						}
+						if(keys.contains(LEFT) && !keys.contains(UP) && !keys.contains(DOWN))
+						{
+							xPos -= speed;
+							facing = FACE_LEFT;
+							if(timeLeft < 1)
+							{
+								characterImageDisplayed = 8;
+							}
+							else
+							{
+								if(characterImageDisplayed < 8 || characterImageDisplayed > 12)
+								{
+									characterImageDisplayed = 8;
+								}
+								characterImageDisplayed++;
+								if(characterImageDisplayed >= 12)
+								{
+									characterImageDisplayed = 8;
+								}
+							}
+						}
+						if(keys.contains(UP) || (keys.contains(UP) && keys.contains(RIGHT)) || (keys.contains(UP) && keys.contains(LEFT)))
+						{
+							yPos -= speed;
+							facing = FACE_UP;
+							if(timeUp < 1)
+							{
+								characterImageDisplayed = 4;
+							}
+							else
+							{
+								if(characterImageDisplayed < 4 || characterImageDisplayed > 8)
+								{
+									characterImageDisplayed = 4;
+								}
+								characterImageDisplayed++;
+								if(characterImageDisplayed >= 8)
+								{
+									characterImageDisplayed = 4;
+								}
+							}
+						}
+						if(keys.contains(DOWN) || (keys.contains(DOWN) && keys.contains(RIGHT)) || (keys.contains(DOWN) && keys.contains(LEFT)))
+						{
+							yPos += speed;
+							facing = FACE_DOWN;
+							if(timeDown < 1)
+							{
+								characterImageDisplayed = 0;
+							}
+							else
+							{
+								if(characterImageDisplayed < 0 || characterImageDisplayed > 4)
+								{
+									characterImageDisplayed = 0;
+								}
+								characterImageDisplayed++;
+								if(characterImageDisplayed >= 4)
+								{
+									characterImageDisplayed = 0;
+								}
+							}
+						}
 					}
-					//if(enemy.attackCollision(sprites.get(1), facing) == true)
-					//{
-						//enemy.getHit();
-						//System.out.println("hit");
-					//}
-					if(sprites.get(1).collidesDown(testBrick))
+					for(int spriteIndex = 0; spriteIndex < player1Sprites.size(); spriteIndex++)
 					{
-						System.out.println("Collision");
+						player1Sprites.get(spriteIndex).setPosition(xPos, yPos);
 					}
-					//enemy.randomMove();
+					//Ghost movement
+					for(int i = 0; i < ghosts.size(); i++)
+					{
+					pm.calculate(ghosts.get(i).getX(), ghosts.get(i).getY(), xPos, yPos);
+						ghosts.get(i).setPosition(pm.getEnemyX(), pm.getEnemyY());
+					}
+					//Ghost movement
+
 					repaint();
-					t.sleep(40);
+					t.sleep(50);
 				}
 			}
 			catch(Exception e)
